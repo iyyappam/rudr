@@ -14,6 +14,8 @@ pub use crate::workload_type::worker::{ReplicatedWorker, SingletonWorker};
 mod workload_builder;
 pub use crate::workload_type::workload_builder::WorkloadMetadata;
 
+mod util;
+
 mod statefulset_builder;
 
 pub mod extended_workload;

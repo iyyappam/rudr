@@ -14,6 +14,8 @@ mod manual_scaler;
 pub use crate::schematic::traits::manual_scaler::ManualScaler;
 mod volume_mounter;
 pub use crate::schematic::traits::volume_mounter::VolumeMounter;
+mod azure_volume_mounter;
+pub use crate::schematic::traits::azure_volume_mounter::AzureVolumeMounter;
 mod util;
 use crate::schematic::traits::util::*;
 use std::collections::BTreeMap;
@@ -33,6 +35,7 @@ pub const INGRESS_V1ALPHA1: &str = "ingress.core.oam.dev/v1alpha1";
 pub const AUTOSCALER_V1ALPHA1: &str = "auto-scaler.core.oam.dev/v1alpha1";
 pub const MANUAL_SCALER_V1ALPHA1: &str = "manual-scaler.core.oam.dev/v1alpha1";
 pub const VOLUME_MOUNTER_V1ALPHA1: &str = "volume-mounter.core.oam.dev/v1alpha1";
+pub const AZURE_VOLUME_MOUNTER_V1ALPHA1: &str = "azure-volume-mounter.core.oam.dev/v1alpha1";
 pub const EMPTY: &str = "empty";
 
 /// Trait describes OAM traits.
@@ -65,6 +68,7 @@ pub enum OAMTrait {
     ManualScaler(ManualScaler),
     Ingress(Ingress),
     VolumeMounter(Box<VolumeMounter>),
+    AzureVolumeMounter(Box<AzureVolumeMounter>),
     Empty(Empty),
 }
 impl OAMTrait {
@@ -74,6 +78,7 @@ impl OAMTrait {
             OAMTrait::Ingress(i) => i.exec(ns, client, phase),
             OAMTrait::ManualScaler(m) => m.exec(ns, client, phase),
             OAMTrait::VolumeMounter(v) => v.exec(ns, client, phase),
+            OAMTrait::AzureVolumeMounter(v) => v.exec(ns, client, phase),
             OAMTrait::Empty(e) => e.exec(ns, client, phase),
         }
     }
@@ -84,6 +89,7 @@ impl OAMTrait {
             OAMTrait::ManualScaler(m) => m.status(ns, client),
             OAMTrait::Empty(e) => e.status(ns, client),
             OAMTrait::VolumeMounter(v) => v.status(ns, client),
+            OAMTrait::AzureVolumeMounter(v) => v.status(ns, client),
         }
     }
 }

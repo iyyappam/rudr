@@ -1,10 +1,11 @@
+use crate::workload_type::util::*;
 use k8s_openapi::api::apps::v1 as apps;
 use k8s_openapi::api::batch::v1 as batchapi;
 use k8s_openapi::api::core::v1 as api;
 use k8s_openapi::apimachinery::pkg::apis::meta::v1 as meta;
 use kube::api::{DeleteParams, Object, PatchParams, PostParams};
 use kube::client::APIClient;
-use log::info;
+use log::{info};
 use std::collections::BTreeMap;
 
 use crate::schematic::component::Component;
@@ -188,7 +189,7 @@ impl DeploymentBuilder {
         self
     }
 
-    pub fn to_deployment(&self) -> apps::Deployment {
+    pub fn to_deployment(&self, pvc_names: Vec<String>) -> apps::Deployment {
         apps::Deployment {
             // TODO: Could make this generic.
             metadata: form_metadata(
@@ -213,6 +214,7 @@ impl DeploymentBuilder {
                     spec: Some(self.component.to_pod_spec_with_policy(
                         self.param_vals.clone(),
                         self.restart_policy.clone(),
+                        pvc_names,
                     )),
                 },
                 ..Default::default()
@@ -222,7 +224,8 @@ impl DeploymentBuilder {
     }
 
     pub fn do_request(self, client: APIClient, namespace: String, phase: &str) -> InstigatorResult {
-        let deployment = self.to_deployment();
+        let pvc_names = list_pvc_names(namespace.clone(), client.clone()).unwrap_or_else(|_| vec![]);
+        let deployment = self.to_deployment(pvc_names);
         match phase {
             "modify" => {
                 let pp = kube::api::PatchParams::default();
@@ -317,7 +320,7 @@ impl JobBuilder {
         to_config_maps(configs, self.owner_ref.clone(), Some(self.labels.clone()))
     }
 
-    fn to_job(&self) -> batchapi::Job {
+    fn to_job(&self, pvc_names : Vec<String>) -> batchapi::Job {
         batchapi::Job {
             metadata: form_metadata(
                 self.name.clone(),
@@ -338,6 +341,7 @@ impl JobBuilder {
                     spec: Some(self.component.to_pod_spec_with_policy(
                         self.param_vals.clone(),
                         self.restart_policy.clone(),
+                        pvc_names,
                     )),
                 },
                 ..Default::default()
@@ -371,7 +375,8 @@ impl JobBuilder {
     }
 
     pub fn do_request(self, client: APIClient, namespace: String, phase: &str) -> InstigatorResult {
-        let job = self.to_job();
+        let pvc_names = list_pvc_names(namespace.clone(), client.clone()).unwrap_or_else(|_| vec![]);
+        let job = self.to_job(pvc_names);
         match phase {
             "modify" => {
                 //TODO support modify config_map

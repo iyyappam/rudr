@@ -54,7 +54,7 @@ impl Component {
     }
 
     /// to_pod_spec generates a pod specification.
-    pub fn to_pod_spec(&self, param_vals: ParamMap) -> core::PodSpec {
+    pub fn to_pod_spec(&self, param_vals: ParamMap, pvc_names :Vec<String>) -> core::PodSpec {
         let containers = self.to_containers(param_vals);
         let image_pull_secrets = Some(self.image_pull_secrets());
         let node_selector = self.to_node_selector();
@@ -91,10 +91,12 @@ impl Component {
                             ..Default::default()
                         })
                     } else {
-                        pvc = Some(core::PersistentVolumeClaimVolumeSource {
-                            claim_name: v.name.clone(),
-                            read_only: Some(v.access_mode == AccessMode::RO),
-                        });
+                        if pvc_names.contains(&v.name) {
+                            pvc = Some(core::PersistentVolumeClaimVolumeSource {
+                                claim_name: v.name.clone(),
+                                read_only: Some(v.access_mode == AccessMode::RO),
+                            });
+                        }
                         None
                     };
                     // An ephemeral volume will be backed by EmptyDir. A persistent volume
@@ -121,8 +123,9 @@ impl Component {
         &self,
         param_vals: ParamMap,
         restart_policy: String,
+        pvc_names :Vec<String>,
     ) -> core::PodSpec {
-        let mut pod_spec = self.to_pod_spec(param_vals);
+        let mut pod_spec = self.to_pod_spec(param_vals, pvc_names);
         pod_spec.restart_policy = Some(restart_policy);
         pod_spec
     }
