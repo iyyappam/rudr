@@ -1,3 +1,4 @@
+use crate::workload_type::util::*;
 use crate::schematic::component::Component;
 use crate::workload_type::workload_builder;
 use crate::workload_type::{InstigatorResult, ParamMap};
@@ -59,7 +60,7 @@ impl StatefulsetBuilder {
         self
     }
 
-    pub fn to_statefulset(&self) -> apps::StatefulSet {
+    pub fn to_statefulset(&self, pvc_names : Vec<String>) -> apps::StatefulSet {
         apps::StatefulSet {
             metadata: workload_builder::form_metadata(
                 self.name.clone(),
@@ -82,6 +83,7 @@ impl StatefulsetBuilder {
                     spec: Some(self.component.to_pod_spec_with_policy(
                         self.param_vals.clone(),
                         self.restart_policy.clone(),
+                        pvc_names,
                     )),
                 },
                 ..Default::default()
@@ -110,7 +112,8 @@ impl StatefulsetBuilder {
     }
 
     pub fn do_request(self, client: APIClient, namespace: String, phase: &str) -> InstigatorResult {
-        let statefulset = self.to_statefulset();
+        let pvc_names = list_pvc_names(namespace.clone(), client.clone()).unwrap_or_else(|_| vec![]);
+        let statefulset = self.to_statefulset(pvc_names);
         match phase {
             "modify" => {
                 let pp = kube::api::PatchParams::default();

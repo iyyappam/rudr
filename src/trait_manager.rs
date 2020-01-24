@@ -13,7 +13,7 @@ use crate::{
         configuration::ComponentConfiguration,
         parameter::{resolve_values, ParameterValue},
         traits::{
-            self, Autoscaler, Empty, Ingress, ManualScaler, OAMTrait, TraitBinding, VolumeMounter,
+            self, Autoscaler, Empty, Ingress, ManualScaler, OAMTrait, TraitBinding, VolumeMounter, AzureVolumeMounter
         },
     },
 };
@@ -81,6 +81,18 @@ impl TraitManager {
                 );
                 debug!("VOLUME_MOUNTER: {:?}", volmount);
                 Ok(OAMTrait::VolumeMounter(Box::new(volmount)))
+            }
+            traits::AZURE_VOLUME_MOUNTER_V1ALPHA1 => {
+                let azure_volmount = AzureVolumeMounter::from_properties(
+                    self.config_name.clone(),
+                    self.instance_name.clone(),
+                    self.component.component_name.clone(),
+                    prop_map,
+                    self.owner_ref.clone(),
+                    self.component_schematic.clone(),
+                );
+                debug!("AZURE_VOLUME_MOUNTER: {:?}", azure_volmount);
+                Ok(OAMTrait::AzureVolumeMounter(Box::new(azure_volmount)))
             }
             traits::AUTOSCALER_V1ALPHA1 => {
                 let auto_scaler = Autoscaler::from_properties(
